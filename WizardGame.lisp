@@ -10,6 +10,15 @@
                         (garden (living-room east door))
                         (attic (living-room downstairs ladder))))
 
+(defparameter *objects* '(whiskey bucket frog chain))
+
+(defparameter *object-locations* '((whiskey living-room)
+                                    (bucket living-room)
+                                    (frog garden)
+                                    (chain garden)))
+
+(defparameter *location* 'living-room)
+
 (defun describe-location (location nodes)
   (cadr (assoc location nodes)))
 
@@ -18,3 +27,35 @@
 
 (defun describe-paths (location edges)
   (apply #'append (mapcar #'describe-path (cdr (assoc location edges)))))
+
+(defun objects-at (loc objs obj-locs)
+  (labels ((at-loc-p (objs)
+              (eq (cadr (assoc objs obj-locs)) loc)))
+  (remove-if-not #'at-loc-p objs)))
+
+(defun describe-objects (loc objs obj-locs)
+  (labels ((describe-obj (obj) `(you see a ,obj on the floor.)))
+  (apply #'append (mapcar #'describe-obj (objects-at loc objs obj-locs)))))
+
+(defun look ()
+  (append (describe-location *location* *nodes*)
+          (describe-paths *location* *edges*)
+          (describe-objects *location* *objects* *object-locations*)))
+
+(defun walk (direction)
+  (let ((next (find direction (cdr (assoc *location* *edges*))
+                              :key #'cadr)))
+  (if next
+        (progn (setf *location* (car next))
+                (look))
+        '(you cannot go that way.))))
+
+(defun pickup (object)
+  (cond ((member object
+                  (objects-at *location* *objects* *object-locations*))
+          (push (list object 'body) *object-locations*)
+            `(you are now carrying the ,object))
+          (t '(you cannot get that.))))
+
+(defun inventory ()
+  (cons 'items- (objects-at 'body *objects* *object-locations*)))
